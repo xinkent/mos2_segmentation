@@ -26,7 +26,7 @@ class FullyConvolutionalNetwork():
                            input_tensor=None,
                            input_shape=(self.img_height, self.img_width,3))
 
-    def create_fcn32s(self,binary=False):
+    def create_fcn32s(self):
         ip = Input(shape=(self.img_height, self.img_width,3))
         h = self.vgg16.layers[1](ip)
         h = self.vgg16.layers[2](h)
@@ -51,10 +51,7 @@ class FullyConvolutionalNetwork():
 
         h = Conv2D(self.FCN_CLASSES, (1, 1), activation='relu')(h)
         h = Conv2DTranspose(self.FCN_CLASSES,(64,64), strides=(32,32),padding="same",kernel_initializer=Constant(bilinear_upsample_weights(32,self.FCN_CLASSES)))(h)
-        if binary:
-            op = Activation('sigmoid')(h)
-        else:
-            op = Activation('softmax')(h)
+        op = Activation('softmax')(h)
         model = Model(ip, op)
         # for layer in model.layers[:15]:
         #    layer.trainable = False

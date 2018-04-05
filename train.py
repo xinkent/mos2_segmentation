@@ -44,7 +44,7 @@ def train():
     np.random.seed(seed=32)
     img_size = 512
     if binary:
-        nb_classes = 1
+        nb_classes = 2
     else:
         nb_classes = 5
     names = os.listdir(path_to_train)
@@ -61,7 +61,7 @@ def train():
 
     FCN = FullyConvolutionalNetwork(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_classes)
     adam = Adam(lr)
-    train_model = FCN.create_fcn32s(binary=binary)
+    train_model = FCN.create_fcn32s()
     # train_model = generator(nb_classes)
     if binary:
         train_model.compile(loss='binary_crossentropy', optimizer=adam)
