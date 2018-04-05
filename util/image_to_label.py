@@ -6,14 +6,14 @@ import copy
 # from color_map import make_color_map
 
 
-label_out_path = './data/label/'
-clabel_out_path = './data/label_color/'
+label_out_path = '../data/label_binary/'
+# clabel_out_path = './data/label_color/'
 if not os.path.exists(label_out_path):
     os.mkdir(label_out_path)
 # if not os.path.exists(clabel_out_path):
 #     os.mkdir(clabel_out_path)
 
-img_path = "./mos2_saito/color/"
+img_path = "/Users/shin/work/graphen/mos2_saito/color/"
 nb_classes = 5
 color_list = np.array([[255,0,255],[0,255,255],[255,0,0],[0,255,0],[0,0,255]]) # ピンク,水色,赤,青,緑
 # color_map = make_color_map()
@@ -31,6 +31,8 @@ for name in os.listdir(img_path):
             cl = dist.argmin()
             label[x,y,cl] = 1
     label = label.argmax(axis=2).astype(np.uint8)
+    label[label !=2 ] = 0
+    label[label == 2] = 1
     label = Image.fromarray(label, mode='P')
     palette_im = Image.open('/Users/shin/Dataset/VOCdevkit/VOC2012/SegmentationClass/2007_000032.png')
     label.palette = copy.copy(palette_im.palette)
