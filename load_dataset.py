@@ -54,7 +54,7 @@ def load_data_aug(path, size=512, mode=None,aug=3,binary=False):
         if mode == "label":
             y = np.array(img, dtype=np.int32)
             if binary:
-                y = binary_label(y,size)
+                y = multi_label(y,size, 2)
             else:
                 y = multi_label(y,size, 5)
             # y = np.expand_dims(y, axis=0)
@@ -81,7 +81,7 @@ def generate_arrays_from_file(names, path_to_train, path_to_target, img_size, nb
 
 def generate_dataset(names, path_to_train, path_to_target, img_size, nb_class,binary=False):
     if binary:
-        nb_class = 1
+        nb_class = 2
     else:
         nb_class = 5
     X_list = []
