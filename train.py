@@ -84,9 +84,9 @@ def train():
     ind = np.random.permutation(nb_test)
     for i in ind:
         name = test_names[i]
-        img   = load_data(path_to_train    + 'or' + name + '.png',  img_size, 'original')
-        x     = load_data(path_to_train    + 'or' + name + '.png',  img_size, 'data')
-        y     = load_data(path_to_target + 'col' +  name + '.png', img_size, 'label')
+        img   = load_data_aug(path_to_train    + 'or' + name + '.png',  img_size, 'original',aug=1)
+        x     = load_data_aug(path_to_train    + 'or' + name + '.png',  img_size, 'data',aug=1)
+        y     = load_data_aug(path_to_target + 'col' +  name + '.png', img_size, 'label',aug=1)
         pred = train_model.predict(x)[0].argmax(axis=2)
         y = y[0].argmax(axis=2)
         # pred = Image.fromarray(pred, mode='P')
