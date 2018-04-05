@@ -28,7 +28,7 @@ def load_data(path, size=512, mode=None):
         return img
     if mode == "label":
         y = np.array(img, dtype=np.int32)
-        y = multi_binarylab(y,size, 5)
+        y = multi_label(y,size, 5)
         y = np.expand_dims(y, axis=0)
         return y
     if mode == "data":
