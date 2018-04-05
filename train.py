@@ -10,6 +10,8 @@ from load_dataset import *
 from model import FullyConvolutionalNetwork
 import warnings
 import argparse
+import sys
+sys.path.append('./util')
 from color_map import make_color_map
 # warnings.filterwarnings('ignore')
 
@@ -33,7 +35,7 @@ def train():
 
     if not os.path.exists(out):
         os.mkdir(out)
-    f = open('param.txt','w')
+    f = open(out + '/param.txt','w')
     f.write('epoch:' + str(args.epoch) + '\n' + 'batch:' + str(batchsize) + '\n' + 'lr:' + str(lr))
     f.close()
 
