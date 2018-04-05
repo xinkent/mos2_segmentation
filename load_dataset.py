@@ -6,11 +6,16 @@ from keras.preprocessing import image
 from keras.applications.vgg16 import VGG16, preprocess_input
 
 
-def binarylab(labels, size, nb_class):
+def multi_label(labels, size, nb_class):
     y = np.zeros((size,size,nb_class))
     for i in range(size):
         for j in range(size):
             y[i,j,labels[i][j]] = 1
+    return y
+
+def binary_label(labels, size):
+    y = np.zeros((size,size))
+    y[labels==2] = 1
     return y
 
 def load_data(path, size=512, mode=None):
@@ -23,7 +28,7 @@ def load_data(path, size=512, mode=None):
         return img
     if mode == "label":
         y = np.array(img, dtype=np.int32)
-        y = binarylab(y,size, 5)
+        y = multi_binarylab(y,size, 5)
         y = np.expand_dims(y, axis=0)
         return y
     if mode == "data":
@@ -32,7 +37,7 @@ def load_data(path, size=512, mode=None):
         X = preprocess_input(X)
         return X
 
-def load_data_aug(path, size=512, mode=None):
+def load_data_aug(path, size=512, mode=None, binary=False):
     data_list = []
     img = Image.open(path)
     w,h = img.size
@@ -48,7 +53,10 @@ def load_data_aug(path, size=512, mode=None):
             data_list.append(img)
         if mode == "label":
             y = np.array(img, dtype=np.int32)
-            y = binarylab(y,size, 5)
+            if binary:
+                y = binary_label(y,size)
+            else:
+                y = multi_label(y,size, 5)
             # y = np.expand_dims(y, axis=0)
             data_list.append(y)
         if mode == "data":
@@ -71,25 +79,18 @@ def generate_arrays_from_file(names, path_to_train, path_to_target, img_size, nb
             yield(X,y)
 
 
-def generate_dataset(names, path_to_train, path_to_target, img_size, nb_class):
+def generate_dataset(names, path_to_train, path_to_target, img_size, nb_class,binary=False):
+    if binary:
+        nb_class = 1
+    else:
+        nb_class = 5
     X_list = []
     y_list = []
     for name in names:
         Xpath = path_to_train + "or{}.png".format(name)
         ypath = path_to_target + "col{}.png".format(name)
         X = load_data_aug(Xpath, img_size, mode="data")
-        y = load_data_aug(ypath, img_size, mode = "label")
+        y = load_data_aug(ypath, img_size, mode = "label", binary=binary)
         X_list.append(X)
         y_list.append(y)
-    return np.array(X_list).reshape([-1,img_size, img_size, 3]), np.array(y_list).reshape([-1, img_size, img_size, 5])
-
-
-
-def get_bit(byte_val, idx):
-    return int((byte_val & (1 << idx)) != 0)
-
-def shift_bit(byte_val, idx):
-    return byte_val << idx if idx >= 0 else byte_val >> (-idx)
-
-def bitor(a, b):
-    return a | b
+    return np.array(X_list).reshape([-1,img_size, img_size, 3]), np.array(y_list).reshape([-1, img_size, img_size, nb_class])

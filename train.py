@@ -20,10 +20,11 @@ def train():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epoch',          '-e',  type=int,   default=100)
     parser.add_argument('--batchsize',      '-b',  type=int,   default=1)
-    parser.add_argument('--train_dataset',   '-tr',             default='./data/ori/')
+    parser.add_argument('--train_dataset',  '-tr',             default='./data/ori/')
     parser.add_argument('--target_dataset', '-ta',             default='./data/label/')
     parser.add_argument('--lr',             '-l',  type=float, default=1e-5, )
     parser.add_argument('--out_path',       '-o')
+    parser.add_argument('--binary',         '-bi', type=int,   default=0)
 
     args = parser.parse_args()
     path_to_train    = args.train_dataset
@@ -32,6 +33,7 @@ def train():
     batchsize        = args.batchsize
     lr               = args.lr
     out              = args.out_path
+    binary           = [False,True][args.binary]
 
     if not os.path.exists(out):
         os.mkdir(out)
@@ -41,7 +43,10 @@ def train():
 
     np.random.seed(seed=32)
     img_size = 512
-    nb_classes = 5
+    if binary:
+        nb_classes = 1
+    else:
+        nb_classes = 5
     names = os.listdir(path_to_train)
     names = np.array([name[2:7] for name in names])
     ind = np.random.permutation(len(names))
@@ -52,13 +57,16 @@ def train():
     def crossentropy(y_true, y_pred):
         return K.mean(-K.sum(y_true*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
 
-    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_classes)
+    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_classes, binary=binary)
 
     FCN = FullyConvolutionalNetwork(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_classes)
     adam = Adam(lr)
-    train_model = FCN.create_fcn32s()
+    train_model = FCN.create_fcn32s(binary=binary)
     # train_model = generator(nb_classes)
-    train_model.compile(loss=crossentropy, optimizer=adam)
+    if binary:
+        train_model.compile(loss='binary_crossentropy', optimizer=adam)
+    else:
+        train_model.compile(loss=crossentropy, optimizer=adam)
     # train_model.fit_generator(generate_arrays_from_file(train_names, path_to_train, path_to_target, img_size, nb_classes),
     #                                                steps_per_epoch=nb_data/1, epochs=1000)
     train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch)
