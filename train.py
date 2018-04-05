@@ -62,9 +62,9 @@ def train():
     FCN = FullyConvolutionalNetwork(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
     adam = Adam(lr)
     train_model = FCN.create_fcn32s()
-    # train_model = generator(nb_classes)
+    # train_model = generator(nb_class)
     train_model.compile(loss=crossentropy, optimizer=adam)
-    # train_model.fit_generator(generate_arrays_from_file(train_names, path_to_train, path_to_target, img_size, nb_classes),
+    # train_model.fit_generator(generate_arrays_from_file(train_names, path_to_train, path_to_target, img_size, nb_class),
     #                                                steps_per_epoch=nb_data/1, epochs=1000)
     train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch)
     train_model.save_weights(out + '/weights.h5')
@@ -81,9 +81,9 @@ def train():
     ind = np.random.permutation(nb_test)
     for i in ind:
         name = test_names[i]
-        img   = load_data_aug(path_to_train    + 'or' + name + '.png',  img_size, 'original',aug=1)
-        x     = load_data_aug(path_to_train    + 'or' + name + '.png',  img_size, 'data',aug=1)
-        y     = load_data_aug(path_to_target + 'col' +  name + '.png', img_size, 'label',aug=1)
+        img   = load_data(path_to_train    + 'or' + name + '.png',  img_size, 'original')
+        x     = load_data(path_to_train    + 'or' + name + '.png',  img_size, 'data')
+        y     = load_data(path_to_target + 'col' +  name + '.png', img_size, 'label')
         pred = train_model.predict(x)[0].argmax(axis=2)
         y = y[0].argmax(axis=2)
         # pred = Image.fromarray(pred, mode='P')
@@ -95,7 +95,7 @@ def train():
         # y.save('./data/result/label_' + name + '.png')
         y_rgb = np.zeros((img_size,img_size,3))
         pred_rgb = np.zeros((img_size, img_size,3))
-        for i in range(nb_classes):
+        for i in range(nb_class):
             y_rgb[y == i] = color_map[i]
             pred_rgb[pred==i] = color_map[i]
         img.save(out + '/input_' + name + '.png')
