@@ -13,11 +13,6 @@ def multi_label(labels, size, nb_class):
             y[i,j,labels[i][j]] = 1
     return y
 
-def binary_label(labels, size):
-    y = np.zeros((size,size))
-    y[labels==2] = 1
-    return y
-
 def load_data(path, size=512, mode=None):
     img = Image.open(path)
     w,h = img.size
@@ -37,7 +32,7 @@ def load_data(path, size=512, mode=None):
         X = preprocess_input(X)
         return X
 
-def load_data_aug(path, size=512, mode=None,aug=3,binary=False):
+def load_data_aug(path, size=512, mode=None,aug=3, nb_class=5):
     data_list = []
     img = Image.open(path)
     w,h = img.size
@@ -53,10 +48,7 @@ def load_data_aug(path, size=512, mode=None,aug=3,binary=False):
             data_list.append(img)
         if mode == "label":
             y = np.array(img, dtype=np.int32)
-            if binary:
-                y = multi_label(y,size, 2)
-            else:
-                y = multi_label(y,size, 5)
+            y = multi_label(y,size, nb_class)
             # y = np.expand_dims(y, axis=0)
             data_list.append(y)
         if mode == "data":
@@ -79,18 +71,14 @@ def generate_arrays_from_file(names, path_to_train, path_to_target, img_size, nb
             yield(X,y)
 
 
-def generate_dataset(names, path_to_train, path_to_target, img_size, nb_class,binary=False):
-    if binary:
-        nb_class = 2
-    else:
-        nb_class = 5
+def generate_dataset(names, path_to_train, path_to_target, img_size, nb_class):
     X_list = []
     y_list = []
     for name in names:
         Xpath = path_to_train + "or{}.png".format(name)
         ypath = path_to_target + "col{}.png".format(name)
-        X = load_data_aug(Xpath, img_size, mode="data")
-        y = load_data_aug(ypath, img_size, mode = "label", binary=binary)
+        X = load_data_aug(Xpath, img_size, mode="data", nb_class=nb_class)
+        y = load_data_aug(ypath, img_size, mode = "label", nb_class=nb_class)
         X_list.append(X)
         y_list.append(y)
     return np.array(X_list).reshape([-1,img_size, img_size, 3]), np.array(y_list).reshape([-1, img_size, img_size, nb_class])
