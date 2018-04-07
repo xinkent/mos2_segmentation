@@ -47,11 +47,20 @@ def train():
         nb_class = 2
     else:
         nb_class = 5
-    names = os.listdir(path_to_train)
-    names = np.array([name[2:7] for name in names])
-    ind = np.random.permutation(len(names))
-    train_names = names[ind[:int(len(names) * 0.8)]]
-    test_names  = names[ind[int(len(names) * 0.8):]]
+
+    with open('./data/train.txt','r') as f:
+        ls = f.readlines()
+    train_names = [l.strip('\n') for l in ls]
+    with open('./data/test.txt','r') as f:
+        ls = f.readlines()
+    test_names = [l.strip('\n') for l in ls]
+
+    # names = os.listdir(path_to_train)
+    # names = np.array([name[2:7] for name in names])
+    # ind = np.random.permutation(len(names))
+    # train_names = names[ind[:int(len(names) * 0.8)]]
+    # test_names  = names[ind[int(len(names) * 0.8):]]
+    
     nb_data = len(train_names)
 
     def crossentropy(y_true, y_pred):
