@@ -2,6 +2,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping
 from keras import backend as K
 from PIL import Image
 import os
@@ -60,7 +61,7 @@ def train():
     # ind = np.random.permutation(len(names))
     # train_names = names[ind[:int(len(names) * 0.8)]]
     # test_names  = names[ind[int(len(names) * 0.8):]]
-    
+
     nb_data = len(train_names)
 
     def crossentropy(y_true, y_pred):
@@ -75,7 +76,8 @@ def train():
     train_model.compile(loss=crossentropy, optimizer=adam)
     # train_model.fit_generator(generate_arrays_from_file(train_names, path_to_train, path_to_target, img_size, nb_class),
     #                                                steps_per_epoch=nb_data/1, epochs=1000)
-    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.2)
+    es_cb = EarlyStopping(monitor='val_loss', patience=0, verbose=0, mode='auto')
+    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
     train_model.save_weights(out + '/weights.h5')
 
 
