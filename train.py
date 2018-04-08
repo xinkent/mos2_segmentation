@@ -76,8 +76,8 @@ def train():
     train_model.compile(loss=crossentropy, optimizer=adam)
     # train_model.fit_generator(generate_arrays_from_file(train_names, path_to_train, path_to_target, img_size, nb_class),
     #                                                steps_per_epoch=nb_data/1, epochs=1000)
-    es_cb = EarlyStopping(monitor='val_loss', patience=0, verbose=0, mode='auto')
-    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
+    es_cb = EarlyStopping(monitor='val_loss', patience=20, verbose=0, mode='auto')
+    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1,callbacks=[es_cb])
     train_model.save_weights(out + '/weights.h5')
 
 
