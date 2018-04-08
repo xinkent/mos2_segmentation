@@ -64,11 +64,14 @@ def train():
 
     nb_data = len(train_names)
 
+    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
+    class_freq = np.array([np.sum(train_y_label == i) for i in range(5)])
+    class_weights = np.median(class_freq) /class_freq
     def crossentropy(y_true, y_pred):
         return K.mean(-K.sum(y_true*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
 
-    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
-
+    def weighted_crossentropy(y_true, y_pred):
+        return K.mean(-K.sum((y_true*class_weights)*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
     FCN = FullyConvolutionalNetwork(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
     adam = Adam(lr)
     train_model = FCN.create_fcn32s()
@@ -84,7 +87,7 @@ def train():
     train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
 >>>>>>> e553befddb677b50f0a3f38ce4c0698c69b9a024
     train_model.save_weights(out + '/weights.h5')
-    
+
     # test data
     # fig = plt.figure()
 
