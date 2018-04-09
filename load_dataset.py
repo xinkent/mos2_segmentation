@@ -71,14 +71,14 @@ def generate_arrays_from_file(names, path_to_train, path_to_target, img_size, nb
             yield(X,y)
 
 
-def generate_dataset(names, path_to_train, path_to_target, img_size, nb_class, aug=True):
+def generate_dataset(names, path_to_train, path_to_target, img_size, nb_class, aug=3):
     X_list = []
     y_list = []
     for name in names:
         Xpath = path_to_train + "or{}.png".format(name)
         ypath = path_to_target + "col{}.png".format(name)
-        X = load_data_aug(Xpath, img_size, mode="data", nb_class=nb_class)
-        y = load_data_aug(ypath, img_size, mode = "label", nb_class=nb_class)
+        X = load_data_aug(Xpath, img_size, mode="data", nb_class=nb_class,aug=aug)
+        y = load_data_aug(ypath, img_size, mode = "label", nb_class=nb_class, aug =aug)
         X_list.append(X)
         y_list.append(y)
     return np.array(X_list).reshape([-1,img_size, img_size, 3]), np.array(y_list).reshape([-1, img_size, img_size, nb_class])

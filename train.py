@@ -77,7 +77,7 @@ def train():
     nb_data = len(train_names)
 
     train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
-    test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, nb_class, aug=False)
+    test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, nb_class, aug=1)
     class_freq = np.array([np.sum(train_y.argmax(axis=3) == i) for i in range(nb_class)])
     class_weights = np.median(class_freq) /class_freq
     def crossentropy(y_true, y_pred):
