@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
 from keras import backend as K
+import tensorflow as tf
 from PIL import Image
 import os
 import copy
@@ -73,7 +74,7 @@ def train():
     nb_data = len(train_names)
 
     train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
-    class_freq = np.array([np.sum(train_y.argmax(axis=3) == i) for i in range(5)])
+    class_freq = np.array([np.sum(train_y.argmax(axis=3) == i) for i in range(nb_class)])
     class_weights = np.median(class_freq) /class_freq
     def crossentropy(y_true, y_pred):
         return K.mean(-K.sum(y_true*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
