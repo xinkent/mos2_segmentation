@@ -127,7 +127,7 @@ def train():
 
     file = open(out + '/accuracy.csv','w')
     pd.DataFrame(mat).to_csv('confusion.csv')
-    pixel_wize    = np.sum([mat[k,k] for k in range(nb_class)]) / np.sum(mat)
+    pixel_wise    = np.sum([mat[k,k] for k in range(nb_class)]) / np.sum(mat)
     mean_acc_list = [mat[k,k]/np.sum(mat[k,:]) for k in range(5)]
     mean_acc      = np.sum(mean_acc_list) / nb_class
     mean_iou_list = [mat[k,k] / (np.sum(mat[k,:]) + np.sum(mat[:,k]) - mat[k,k]) for k in range(5)]
