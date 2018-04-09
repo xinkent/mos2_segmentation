@@ -65,7 +65,7 @@ def train():
     nb_data = len(train_names)
 
     train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
-    class_freq = np.array([np.sum(train_y_label == i) for i in range(5)])
+    class_freq = np.array([np.sum(train_y.argmax(axis=3) == i) for i in range(5)])
     class_weights = np.median(class_freq) /class_freq
     def crossentropy(y_true, y_pred):
         return K.mean(-K.sum(y_true*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
@@ -76,16 +76,13 @@ def train():
     adam = Adam(lr)
     train_model = FCN.create_fcn32s()
     # train_model = generator(nb_class)
-    train_model.compile(loss=crossentropy, optimizer=adam)
+    train_model.compile(loss=weighted_crossentropy, optimizer=adam)
     # train_model.fit_generator(generate_arrays_from_file(train_names, path_to_train, path_to_target, img_size, nb_class),
     #                                                steps_per_epoch=nb_data/1, epochs=1000)
-<<<<<<< HEAD
-    es_cb = EarlyStopping(monitor='val_loss', patience=20, verbose=0, mode='auto')
-    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1,callbacks=[es_cb])
-=======
     es_cb = EarlyStopping(monitor='val_loss', patience=5, verbose=0, mode='auto')
-    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
->>>>>>> e553befddb677b50f0a3f38ce4c0698c69b9a024
+    # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
+    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1)
+    train_model.save_weights(out + '/weights.h5')
     train_model.save_weights(out + '/weights.h5')
 
     # test data
