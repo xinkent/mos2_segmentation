@@ -123,9 +123,12 @@ def train():
     if binary:
         fpr, tpr, threshods = roc_curve(y, pred_score, pos_label = 1)
         auc_score = auc(fpr,tpr)
+        recall       = mat[1,1] / np.sum(mat[1,:])
+        precision = mat[1,1] / np.sum(mat[:,1])
+        f_value    = 2 * recall * precision / (recall + precision)
         plt.plot(fpr,tpr)
         plt.savefig(out + '/ROC.png')
-        file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou) + '\n' + 'auc: ' + str(auc_score))
+        file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou) + '\n' + 'auc: ' + str(auc_score) + '\n' + 'f_value: ' + str(f_value))
     else:
         file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou))
     file.close()
