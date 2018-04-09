@@ -133,6 +133,6 @@ def train():
     mean_iou_list = [mat[k,k] / (np.sum(mat[k,:]) + np.sum(mat[:,k]) - mat[k,k]) for k in range(5)]
     mean_iou      = np.sum(mean_iou_list) / nb_class
     file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou))
-
+    file.close()
 if __name__ == '__main__':
     train()
