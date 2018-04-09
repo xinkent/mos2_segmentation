@@ -26,6 +26,7 @@ def train():
     parser.add_argument('--lr',             '-l',  type=float, default=1e-5, )
     parser.add_argument('--out_path',       '-o')
     parser.add_argument('--binary',         '-bi', type=int,   default=0)
+    parser.add_argument('--gpu', '-g', type=int, default=2)
 
     args = parser.parse_args()
     path_to_train    = args.train_dataset
@@ -35,6 +36,13 @@ def train():
     lr               = args.lr
     out              = args.out_path
     binary           = [False,True][args.binary]
+
+    # set gpu environment
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    sess = tf.Session(config = config)
+    K.set_session(sess)
 
     if not os.path.exists(out):
         os.mkdir(out)
