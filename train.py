@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import os
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
@@ -16,7 +17,6 @@ import sys
 sys.path.append('./util')
 from color_map import make_color_map
 # warnings.filterwarnings('ignore')
-
 
 def train():
     parser = argparse.ArgumentParser()
@@ -102,6 +102,7 @@ def train():
     nb_test = len(test_names)
     color_map = make_color_map()
     ind = np.random.permutation(nb_test)
+    mat = np.zeros([nb_class,nb_class])
     for i in ind:
         name = test_names[i]
         img   = load_data(path_to_train    + 'or' + name + '.png',  img_size, 'original')
@@ -109,21 +110,29 @@ def train():
         y     = load_data(path_to_target + 'col' +  name + '.png', img_size, 'label')
         pred = train_model.predict(x)[0].argmax(axis=2)
         y = y[0].argmax(axis=2)
-        # pred = Image.fromarray(pred, mode='P')
-        # y    = Image.fromarray(y, mode = 'P')
-        # palette_im = Image.open('./data/label/col00000.png')
-        # pred.palette = copy.copy(palette_im.palette)
-        # y.palette    = copy.copy(palette_im.palette)
-        # pred.save('./data/result/pred_' + name + '.png')
-        # y.save('./data/result/label_' + name + '.png')
         y_rgb = np.zeros((img_size,img_size,3))
         pred_rgb = np.zeros((img_size, img_size,3))
         for i in range(nb_class):
             y_rgb[y == i] = color_map[i]
             pred_rgb[pred==i] = color_map[i]
+
+        # confusion matrix
+        for r in range(img_size):
+            for c in range(img_size):
+                mat[y[r,c], pred[r,c]] += 1
+
         img.save(out + '/input_' + name + '.png')
         Image.fromarray(y_rgb.astype(np.uint8)).save(out + '/label_' + name + '.png')
         Image.fromarray(pred_rgb.astype(np.uint8)).save(out + '/pred_' + name + '.png')
+
+    file = open(out + '/accuracy.csv','w')
+    pd.DataFrame(mat).to_csv('confusion.csv')
+    pixel_wize    = np.sum([mat[k,k] for k in range(nb_class)]) / np.sum(mat)
+    mean_acc_list = [mat[k,k]/np.sum(mat[k,:]) for k in range(5)]
+    mean_acc      = np.sum(mean_acc_list) / nb_class
+    mean_iou_list = [mat[k,k] / (np.sum(mat[k,:]) + np.sum(mat[:,k]) - mat[k,k]) for k in range(5)]
+    mean_iou      = np.sum(mean_iou_list) / nb_class
+    file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou))
 
 if __name__ == '__main__':
     train()
