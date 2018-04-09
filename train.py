@@ -1,12 +1,15 @@
 import numpy as np
 import pandas as pd
 import os
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
 from keras import backend as K
 import tensorflow as tf
 from PIL import Image
+from sklearn.metrics import roc_curve, auc
 import os
 import copy
 from load_dataset import *
@@ -74,6 +77,7 @@ def train():
     nb_data = len(train_names)
 
     train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
+    test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, nb_class, aug=False)
     class_freq = np.array([np.sum(train_y.argmax(axis=3) == i) for i in range(nb_class)])
     class_weights = np.median(class_freq) /class_freq
     def crossentropy(y_true, y_pred):
@@ -101,30 +105,14 @@ def train():
 
     nb_test = len(test_names)
     color_map = make_color_map()
-    ind = np.random.permutation(nb_test)
+
     mat = np.zeros([nb_class,nb_class])
-    for i in ind:
-        name = test_names[i]
-        img   = load_data(path_to_train    + 'or' + name + '.png',  img_size, 'original')
-        x     = load_data(path_to_train    + 'or' + name + '.png',  img_size, 'data')
-        y     = load_data(path_to_target + 'col' +  name + '.png', img_size, 'label')
-        pred = train_model.predict(x)[0].argmax(axis=2)
-        y = y[0].argmax(axis=2)
-        y_rgb = np.zeros((img_size,img_size,3))
-        pred_rgb = np.zeros((img_size, img_size,3))
-        for i in range(nb_class):
-            y_rgb[y == i] = color_map[i]
-            pred_rgb[pred==i] = color_map[i]
-
-        # confusion matrix
-        for r in range(img_size):
-            for c in range(img_size):
-                mat[y[r,c], pred[r,c]] += 1
-
-        img.save(out + '/input_' + name + '.png')
-        Image.fromarray(y_rgb.astype(np.uint8)).save(out + '/label_' + name + '.png')
-        Image.fromarray(pred_rgb.astype(np.uint8)).save(out + '/pred_' + name + '.png')
-
+    pred = train_model.predict(test_X)
+    pred_score = pred.reshape((-1,nb_class))[:,1]
+    pred_label = pred.rehape((-1, nb_class)).argmax(axis=1)
+    y    = test_y.reshape((-1, nb_class)).argmax(axis=1)
+    for i in range(nb_class):
+        mat[y[i],pred_label[i]] += 1
     file = open(out + '/accuracy.csv','w')
     pd.DataFrame(mat).to_csv(out + '/confusion.csv')
     pixel_wise    = np.sum([mat[k,k] for k in range(nb_class)]) / np.sum(mat)
@@ -132,7 +120,29 @@ def train():
     mean_acc      = np.sum(mean_acc_list) / nb_class
     mean_iou_list = [mat[k,k] / (np.sum(mat[k,:]) + np.sum(mat[:,k]) - mat[k,k]) for k in range(nb_class)]
     mean_iou      = np.sum(mean_iou_list) / nb_class
-    file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou))
+    if binary:
+        fpr, tpr, threshods = roc_curve(y, score, pos_label = 1)
+        auc = auc(fpr,tpr)
+        plt.plot(fpr,tpr,title='ROC')
+        plt.savefig(out + '/ROC.png')
+        file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou) + '\n' + 'auc: ' + str(auc))
+    else:
+        file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou))
     file.close()
+
+    # visualize
+    for pr,y in zip(pred, tesy_y):
+        pr = pr.argmax(axis=2)
+        y = y[0].argmax(axis=2)
+        y_rgb = np.zeros((img_size,img_size,3))
+        pred_rgb = np.zeros((img_size, img_size,3))
+        for i in range(nb_class):
+            y_rgb[y == i] = color_map[i]
+            pred_rgb[pr==i] = color_map[i]
+        img.save(out + '/input_' + name + '.png')
+        Image.fromarray(y_rgb.astype(np.uint8)).save(out + '/label_' + name + '.png')
+        Image.fromarray(pred_rgb.astype(np.uint8)).save(out + '/pred_' + name + '.png')
+
+
 if __name__ == '__main__':
     train()

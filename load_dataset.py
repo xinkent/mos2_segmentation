@@ -71,7 +71,7 @@ def generate_arrays_from_file(names, path_to_train, path_to_target, img_size, nb
             yield(X,y)
 
 
-def generate_dataset(names, path_to_train, path_to_target, img_size, nb_class):
+def generate_dataset(names, path_to_train, path_to_target, img_size, nb_class, aug=True):
     X_list = []
     y_list = []
     for name in names:
