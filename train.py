@@ -109,9 +109,9 @@ def train():
     mat = np.zeros([nb_class,nb_class])
     pred = train_model.predict(test_X)
     pred_score = pred.reshape((-1,nb_class))[:,1]
-    pred_label = pred.rehape((-1, nb_class)).argmax(axis=1)
-    y    = test_y.reshape((-1, nb_class)).argmax(axis=1)
-    for i in range(nb_class):
+    pred_label = pred.reshape((-1, nb_class)).argmax(axis=1)
+    y          = test_y.reshape((-1, nb_class)).argmax(axis=1)
+    for i in range(len(y)):
         mat[y[i],pred_label[i]] += 1
     file = open(out + '/accuracy.csv','w')
     pd.DataFrame(mat).to_csv(out + '/confusion.csv')
@@ -121,25 +121,25 @@ def train():
     mean_iou_list = [mat[k,k] / (np.sum(mat[k,:]) + np.sum(mat[:,k]) - mat[k,k]) for k in range(nb_class)]
     mean_iou      = np.sum(mean_iou_list) / nb_class
     if binary:
-        fpr, tpr, threshods = roc_curve(y, score, pos_label = 1)
-        auc = auc(fpr,tpr)
-        plt.plot(fpr,tpr,title='ROC')
+        fpr, tpr, threshods = roc_curve(y, pred_score, pos_label = 1)
+        auc_score = auc(fpr,tpr)
+        plt.plot(fpr,tpr)
         plt.savefig(out + '/ROC.png')
-        file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou) + '\n' + 'auc: ' + str(auc))
+        file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou) + '\n' + 'auc: ' + str(auc_score))
     else:
         file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou))
     file.close()
 
     # visualize
-    for pr,y in zip(pred, tesy_y):
+    for pr,y,name in zip(pred, test_y, test_names):
         pr = pr.argmax(axis=2)
-        y = y[0].argmax(axis=2)
+        y  = y.argmax(axis=2)
         y_rgb = np.zeros((img_size,img_size,3))
         pred_rgb = np.zeros((img_size, img_size,3))
         for i in range(nb_class):
             y_rgb[y == i] = color_map[i]
             pred_rgb[pr==i] = color_map[i]
-        img.save(out + '/input_' + name + '.png')
+        # img.save(out + '/input_' + name + '.png')
         Image.fromarray(y_rgb.astype(np.uint8)).save(out + '/label_' + name + '.png')
         Image.fromarray(pred_rgb.astype(np.uint8)).save(out + '/pred_' + name + '.png')
 
