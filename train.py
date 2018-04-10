@@ -88,8 +88,8 @@ def train():
     FCN = FullyConvolutionalNetwork(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
     adam = Adam(lr)
     train_model = FCN.create_fcn32s()
-    # train_model = generator(nb_class)
-    train_model.compile(loss=weighted_crossentropy, optimizer=adam)
+    train_model.compile(loss=crossentropy, optimizer=adam)
+    # train_model.compile(loss=weighted_crossentropy, optimizer=adam)
     # train_model.fit_generator(generate_arrays_from_file(train_names, path_to_train, path_to_target, img_size, nb_class),
     #                                                steps_per_epoch=nb_data/1, epochs=1000)
     es_cb = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='auto')
