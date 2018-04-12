@@ -94,6 +94,34 @@ class Unet():
         model = Model(ip, op)
         return model
 
+    def create_model2(self):
+        ip = Input(shape=(self.img_height, self.img_width,3))
+
+        # encoder
+        h1 = Conv2D(64,   (3,3), padding= 'same', activation = 'relu')(ip)
+        h = MaxPooling2D(padding='same')(h1)
+        h2 = Conv2D(128,  (3,3), padding= 'same', activation = 'relu')(h)
+        h = MaxPooling2D(padding='same')(h2)
+        h3 = Conv2D(256,  (3,3), padding= 'same', activation = 'relu')(h)
+        h = MaxPooling2D(padding='same')(h3)
+        h4 = Conv2D(512,  (3,3), padding= 'same', activation = 'relu')(h)
+        h = MaxPooling2D(padding='same')(h4)
+        h5 = Conv2D(1024, (3,3), padding= 'same', activation = 'relu')(h)
+
+        h = Conv2DTranspose(512, (2,2), strides=2, padding='same', kernel_initializer=Constant(bilinear_upsample_weights(1,512)))(h5)
+        h = Conv2D(512,(3,3), padding= 'same', activation ='relu')(concatenate([h, h4]))
+        h = Conv2DTranspose(256, (2,2), strides=2, padding='same')(h)
+        h = Conv2D(256,(3,3), padding= 'same', activation ='relu')(concatenate([h, h3]))
+        h = Conv2DTranspose(128, (2,2), strides=2, padding='same')(h)
+        h = Conv2D(128,(3,3), padding= 'same', activation ='relu')(concatenate([h, h2]))
+        h = Conv2DTranspose(64, (2,2),  strides=2, padding='same')(h)
+        h = Conv2D(64,(3,3), padding= 'same', activation ='relu')(concatenate([h, h1]))
+
+        h = Conv2D(self.FCN_CLASSES, (1, 1), activation='relu')(h)
+        op = Activation('softmax')(h)
+        model = Model(ip, op)
+        return model
+
 def bilinear_upsample_weights(factor, number_of_classes):
     filter_size = factor*2 - factor%2
     factor = (filter_size + 1) // 2
