@@ -13,7 +13,7 @@ from sklearn.metrics import roc_curve, auc
 import os
 import copy
 from load_dataset import *
-from model import FullyConvolutionalNetwork
+from model import FullyConvolutionalNetwork, Unet
 import warnings
 import argparse
 import sys
@@ -86,8 +86,10 @@ def train():
     def weighted_crossentropy(y_true, y_pred):
         return K.mean(-K.sum((y_true*class_weights)*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
     FCN = FullyConvolutionalNetwork(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
+    # unet = Unet(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
     adam = Adam(lr)
     train_model = FCN.create_fcn32s()
+    # train_model = unet.create_model()
     train_model.compile(loss=crossentropy, optimizer=adam)
     # train_model.compile(loss=weighted_crossentropy, optimizer=adam)
     # train_model.fit_generator(generate_arrays_from_file(train_names, path_to_train, path_to_target, img_size, nb_class),

@@ -38,8 +38,8 @@ def load_data_aug(path, size=512, mode=None,aug=3, nb_class=5):
     w,h = img.size
     lw = np.random.randint(0,(w-size)/2)
     lh = np.random.randint(0,(h-size)/2)
+    img = img.crop((lw,lh, lw+size, lh +size))
     for i in range(aug):
-        img = img.crop((lw,lh, lw+size, lh +size))
         if i == 1:
             img = ImageOps.flip(img)
         elif i == 2:
