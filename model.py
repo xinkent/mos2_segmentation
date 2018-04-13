@@ -108,7 +108,7 @@ class Unet():
         h = MaxPooling2D(padding='same')(h4)
         h5 = Conv2D(1024, (3,3), padding= 'same', activation = 'relu')(h)
 
-        h = Conv2DTranspose(512, (2,2), strides=2, padding='same', kernel_initializer=Constant(bilinear_upsample_weights(1,512)))(h5)
+        h = Conv2DTranspose(512, (2,2), strides=2, padding='same')(h5)
         h = Conv2D(512,(3,3), padding= 'same', activation ='relu')(concatenate([h, h4]))
         h = Conv2DTranspose(256, (2,2), strides=2, padding='same')(h)
         h = Conv2D(256,(3,3), padding= 'same', activation ='relu')(concatenate([h, h3]))
