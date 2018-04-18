@@ -14,11 +14,12 @@ from keras import backend as K
 import tensorflow as tf
 from PIL import Image
 from sklearn.metrics import roc_curve, auc
-from sklearn.crossvalidation import KFold
+from sklearn.cross_validation import KFold
 from load_dataset import *
 from model import FullyConvolutionalNetwork, Unet
 sys.path.append('./util')
 from color_map import make_color_map
+from progressbar import ProgressBar
 # warnings.filterwarnings('ignore')
 
 def train():
@@ -162,6 +163,10 @@ def cross_valid():
     lr               = args.lr
     out              = args.out_path
     binary           = [False,True][args.binary]
+    
+    if not os.path.exists(out):
+        os.mkdir(out)
+    f = open(out + '/param.txt','w')
 
     # set gpu environment
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
@@ -178,17 +183,19 @@ def cross_valid():
         nb_class = 5
     with open('./data/train.txt','r') as f:
         ls = f.readlines()
-    train_names = [l.strip('\n') for l in ls]
+    train_names = np.array([l.strip('\n') for l in ls])
     nb_data = len(train_names)
     random.shuffle(train_names)
-    result = pd.DataFrame(np.zeros(6,1))
+    result = pd.DataFrame(np.zeros((6,1)))
     result.index = ['FCN', 'FCN + weighted', 'Unet', 'Unet + weighted', 'Unet2', 'Unet2 + weighted']
     n_model = len(result.index)
     model_index_list = ((0,0),(0,1),(1,0),(1,1),(2,0),(2,1))
-    k_fold = KFold(n=nb_data, n_folds = 4)
-    for model_i in range(n_model)
+    k_fold = KFold(n=nb_data, n_folds = 6)
+    for model_i in range(n_model):
+        print(result.index[model_i])
         valid_score_list = []
-        for train valid in KFold:
+        p = ProgressBar()
+        for train, valid in p(k_fold):
             train_X, train_y = generate_dataset(train_names[train], path_to_train, path_to_target, img_size, nb_class)
             valid_X, valid_y = generate_dataset(train_names[valid], path_to_train, path_to_target, img_size, nb_class, aug=1)
             #--------------------------------------------------------------------------------------------------------------------
@@ -196,8 +203,8 @@ def cross_valid():
             #--------------------------------------------------------------------------------------------------------------------
             class_freq = np.array([np.sum(train_y.argmax(axis=3) == i) for i in range(nb_class)])
             class_weights = np.median(class_freq) /class_freq
-            train_model = make_model(model_index_list[model_i][0],model_index_list[model_i][1])
-            train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch)
+            train_model = make_model(model_index_list[model_i][0],model_index_list[model_i][1],img_size, nb_class, class_weights,lr)
+            train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch,verbose=0)
             #--------------------------------------------------------------------------------------------------------------------
             # predict
             #--------------------------------------------------------------------------------------------------------------------
@@ -208,7 +215,6 @@ def cross_valid():
             y          = valid_y.reshape((-1, nb_class)).argmax(axis=1)
             for i in range(len(y)):
                 mat[y[i],pred_label[i]] += 1
-            pd.DataFrame(mat).to_csv(out + '/confusion.csv')
             pixel_wise    = np.sum([mat[k,k] for k in range(nb_class)]) / np.sum(mat)
             mean_acc_list = [mat[k,k]/np.sum(mat[k,:]) for k in range(nb_class)]
             mean_acc      = np.sum(mean_acc_list) / nb_class
@@ -217,9 +223,16 @@ def cross_valid():
             if binary:
                 fpr, tpr, threshods = roc_curve(y, pred_score, pos_label = 1)
                 auc_score = auc(fpr,tpr)
-                recall     = mat[1,1] / np.sum(mat[1,:])
-                precision  = mat[1,1] / np.sum(mat[:,1])
-                f_value    = 2 * recall * precision / (recall + precision)
+                if (mat[1,1] == 0) or (sum(mat[:,1]) == 0):
+                    f_value = 0
+                else:
+                    if sum(mat[1,:]) == 0:
+                        print('error')
+                        recall = 1
+                    else:
+                        recall     = mat[1,1] / np.sum(mat[1,:])
+                    precision  = mat[1,1] / np.sum(mat[:,1])
+                    f_value    = 2 * recall * precision / (recall + precision)
                 valid_score_list.append(f_value)
             else:
                 valid_score_list.append(mean_acc)
@@ -227,7 +240,7 @@ def cross_valid():
     result.to_csv(out + ['multi','binary'][binary] + '_' + str(epoch) + 'epoch.csv')
 
 
-def make_model(i_model,i_loss, img_size, nb_class, weights):
+def make_model(i_model,i_loss, img_size, nb_class, weights, lr):
     FCN = FullyConvolutionalNetwork(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
     unet = Unet(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
 
@@ -235,10 +248,10 @@ def make_model(i_model,i_loss, img_size, nb_class, weights):
         return K.mean(-K.sum(y_true*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
 
     def weighted_crossentropy(y_true, y_pred):
-        return K.mean(-K.sum((y_true*class_weights)*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
+        return K.mean(-K.sum((y_true*weights)*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
 
     if   i_model == 0:
-        model = fcn.create_fcn32s()
+        model = FCN.create_fcn32s()
     elif i_model == 1:
         model = unet.create_model()
     elif i_model == 2:
@@ -255,4 +268,5 @@ def make_model(i_model,i_loss, img_size, nb_class, weights):
 
 
 if __name__ == '__main__':
-    train()
+    # train()
+    cross_valid()
