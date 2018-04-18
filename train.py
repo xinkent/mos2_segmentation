@@ -163,7 +163,7 @@ def cross_valid():
     lr               = args.lr
     out              = args.out_path
     binary           = [False,True][args.binary]
-    
+
     if not os.path.exists(out):
         os.mkdir(out)
     f = open(out + '/param.txt','w')
@@ -203,6 +203,8 @@ def cross_valid():
             #--------------------------------------------------------------------------------------------------------------------
             class_freq = np.array([np.sum(train_y.argmax(axis=3) == i) for i in range(nb_class)])
             class_weights = np.median(class_freq) /class_freq
+            if binary and class_freq[1] == 0:
+                continue
             train_model = make_model(model_index_list[model_i][0],model_index_list[model_i][1],img_size, nb_class, class_weights,lr)
             train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch,verbose=0)
             #--------------------------------------------------------------------------------------------------------------------
@@ -226,11 +228,7 @@ def cross_valid():
                 if (mat[1,1] == 0) or (sum(mat[:,1]) == 0):
                     f_value = 0
                 else:
-                    if sum(mat[1,:]) == 0:
-                        print('error')
-                        recall = 1
-                    else:
-                        recall     = mat[1,1] / np.sum(mat[1,:])
+                    recall     = mat[1,1] / np.sum(mat[1,:])
                     precision  = mat[1,1] / np.sum(mat[:,1])
                     f_value    = 2 * recall * precision / (recall + precision)
                 valid_score_list.append(f_value)
