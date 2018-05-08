@@ -54,18 +54,35 @@ def train():
     f = open(out + '/param.txt','w')
     f.write('epoch:' + str(args.epoch) + '\n' + 'batch:' + str(batchsize) + '\n' + 'lr:' + str(lr))
     f.close()
-    np.random.seed(seed=32)
+    np.random.seed(seed=1)
     img_size = 512
     if binary:
         nb_class = 2
     else:
-        nb_class = 5
+        # nb_class = 5
+        nb_class = 3
     with open('./data/train.txt','r') as f:
         ls = f.readlines()
     train_names = [l.strip('\n') for l in ls]
     with open('./data/test.txt','r') as f:
         ls = f.readlines()
     test_names = [l.strip('\n') for l in ls]
+
+    # names = os.listdir(path_to_train)
+    # names = np.array([name[2:7] for name in names])
+    # ind = np.random.permutation(len(names))
+    # train_names = names[ind[:24]]
+    # test_names  = names[ind[24:]]
+    # f = open('./data/train.txt','w')
+    # for name in train_names:
+    #     f.write(name + '\n')
+    # f.close()
+    # f = open('./data/test.txt','w')
+    # for name in test_names:
+    #     f.write(name + '\n')
+    # f.close()
+    # return 0 
+    
 
     nb_data = len(train_names)
     train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
@@ -77,22 +94,19 @@ def train():
     class_freq = np.array([np.sum(train_y.argmax(axis=3) == i) for i in range(nb_class)])
     class_weights = np.median(class_freq) /class_freq
 
-    def crossentropy(y_true, y_pred):
-        return K.mean(-K.sum(y_true*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
-
-    def weighted_crossentropy(y_true, y_pred):
-        return K.mean(-K.sum((y_true*class_weights)*K.log(y_pred + 1e-7),axis=[3]),axis=[1,2])
-
     # FCN = FullyConvolutionalNetwork(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
-    unet = Unet(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
-    adam = Adam(lr)
+    # unet = Unet(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
+    # adam = Adam(lr)
     # train_model = FCN.create_fcn32s()
-    train_model = unet.create_model2()
+    # train_model = unet.create_model2()
     # train_model.compile(loss=crossentropy, optimizer=adam)
-    train_model.compile(loss=weighted_crossentropy, optimizer=adam)
-    es_cb = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='auto')
+    # train_model.compile(loss=weighted_crossentropy, optimizer=adam)
+    
+    # es_cb = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='auto')
     # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
-    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1)
+    train_model = make_model(2, 1, img_size, nb_class,class_weights, lr) # (model(1:fcn, 2:unet, 3:unet2) ,  weight(0:no weight 1:weight)) 
+    # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1)
+    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch) 
     train_model.save_weights(out + '/weights.h5')
 
     #--------------------------------------------------------------------------------------------------------------------
@@ -120,7 +134,10 @@ def train():
         auc_score = auc(fpr,tpr)
         recall       = mat[1,1] / np.sum(mat[1,:])
         precision = mat[1,1] / np.sum(mat[:,1])
-        f_value    = 2 * recall * precision / (recall + precision)
+        if recall == 0 and precision == 0:
+            f_value = 0
+        else:
+            f_value    = 2 * recall * precision / (recall + precision)
         plt.plot(fpr,tpr)
         plt.savefig(out + '/ROC.png')
         file.write('pixel wize: ' + str(pixel_wise) + '\n' + 'mean acc: ' + str(mean_acc) + '\n' + 'mean iou: ' + str(mean_iou) + '\n' + 'auc: ' + str(auc_score) + '\n' + 'f_value: ' + str(f_value))
@@ -181,6 +198,7 @@ def cross_valid():
         nb_class = 2
     else:
         nb_class = 5
+        # nb_class = 3
     with open('./data/train.txt','r') as f:
         ls = f.readlines()
     train_names = np.array([l.strip('\n') for l in ls])
@@ -266,5 +284,5 @@ def make_model(i_model,i_loss, img_size, nb_class, weights, lr):
 
 
 if __name__ == '__main__':
-    # train()
-    cross_valid()
+    train()
+    # cross_valid()
