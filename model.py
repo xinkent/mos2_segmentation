@@ -122,6 +122,24 @@ class Unet():
         model = Model(ip, op)
         return model
 
+    def pix2pix(self):
+        ip = Input(shape=(self.img_height, self.img_width, 3))
+        # encoder
+        h1 = Conv2D(filters = 64, kernel_size = (3,3), strides = 1, padding = 'same', input_shape = (512,512,3))(ip)
+        h2 = CBR(128, (512, 512, 64))(h1)
+        h3 = CBR(256, (256, 256, 128))(h2)
+        h4 = CBR(512, (128, 128, 256))(h3)
+        h5 = CBR(1024, (64, 64, 512))(h3)
+        # decoder
+        h = CBR(512, (32,32,1024), sample='up', activation='relu', dropout=True)(h5)
+        h = CBR(256, (64,64,1024), sample='up',activation='relu',dropout=True)(concatenate([h,h4]))
+        h = CBR(128, (128,128,512), sample='up',activation='relu',dropout=True)(concatenate([h,h3]))
+        h = CBR(64,  (64,64,256)   , sample='up',activation='relu',dropout=True)(concatenate([h,h2]))
+        h = Conv2D(filters = self.FCN_CLASSES, kernel_size=(3,3), strides=1, padding='same')(concatenate([h,h1]))
+        op = Activation('softmax')(h)
+        model = Model(ip, op)
+
+
 def bilinear_upsample_weights(factor, number_of_classes):
     filter_size = factor*2 - factor%2
     factor = (filter_size + 1) // 2
