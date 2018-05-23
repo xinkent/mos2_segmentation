@@ -14,7 +14,7 @@ from keras import backend as K
 import tensorflow as tf
 from PIL import Image
 from sklearn.metrics import roc_curve, auc
-from sklearn.cross_validation import KFold
+from sklearn.model_selection import KFold
 from load_dataset import *
 from model import FullyConvolutionalNetwork, Unet
 sys.path.append('./util')
@@ -31,6 +31,8 @@ def train():
     parser.add_argument('--lr',             '-l',  type=float, default=1e-5, )
     parser.add_argument('--out_path',       '-o')
     parser.add_argument('--binary',         '-bi', type=int,   default=0)
+    parser.add_argument('--model',          '-m',  type=int,   default=0)
+    parser.add_argument('--weight',         '-w',  type=int,   default=0)
     parser.add_argument('--gpu', '-g', type=int, default=2)
 
     args = parser.parse_args()
@@ -59,8 +61,8 @@ def train():
     if binary:
         nb_class = 2
     else:
-        # nb_class = 5
-        nb_class = 3
+        nb_class = 5
+        # nb_class = 3
     with open('./data/train.txt','r') as f:
         ls = f.readlines()
     train_names = [l.strip('\n') for l in ls]
@@ -92,7 +94,8 @@ def train():
     # training
     #--------------------------------------------------------------------------------------------------------------------
     class_freq = np.array([np.sum(train_y.argmax(axis=3) == i) for i in range(nb_class)])
-    class_weights = np.median(class_freq) /class_freq
+    # class_weights = np.median(class_freq) /class_freq
+    class_weights = np.mean(class_freq) /class_freq
 
     # FCN = FullyConvolutionalNetwork(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
     # unet = Unet(img_height=img_size, img_width=img_size,FCN_CLASSES=nb_class)
@@ -104,7 +107,7 @@ def train():
     
     # es_cb = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='auto')
     # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
-    train_model = make_model(2, 1, img_size, nb_class,class_weights, lr) # (model(1:fcn, 2:unet, 3:unet2) ,  weight(0:no weight 1:weight)) 
+    train_model = make_model(args.model, args.weight, img_size, nb_class,class_weights, lr) # (model(1:fcn, 2:unet, 3:unet2) ,  weight(0:no weight 1:weight)) 
     # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1)
     train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch) 
     train_model.save_weights(out + '/weights.h5')
@@ -202,18 +205,22 @@ def cross_valid():
     with open('./data/train.txt','r') as f:
         ls = f.readlines()
     train_names = np.array([l.strip('\n') for l in ls])
+    with open('./data/test.txt','r') as f:
+        ls = f.readlines()
+    test_names = [l.strip('\n') for l in ls]
+    train_names = np.concatenate([train_names, test_names])
     nb_data = len(train_names)
     random.shuffle(train_names)
-    result = pd.DataFrame(np.zeros((6,1)))
-    result.index = ['FCN', 'FCN + weighted', 'Unet', 'Unet + weighted', 'Unet2', 'Unet2 + weighted']
+    result = pd.DataFrame(np.zeros((3,1)))
+    result.index = ['Unet2', 'pix2pix', 'pix2pix2']
     n_model = len(result.index)
-    model_index_list = ((0,0),(0,1),(1,0),(1,1),(2,0),(2,1))
-    k_fold = KFold(n=nb_data, n_folds = 6)
+    model_index_list = ((2,0), (3,0),(3,1))
+    k_fold = KFold(n_splits = 3)
     for model_i in range(n_model):
         print(result.index[model_i])
         valid_score_list = []
         p = ProgressBar()
-        for train, valid in p(k_fold):
+        for train, valid in p(k_fold.split(train_names)):
             train_X, train_y = generate_dataset(train_names[train], path_to_train, path_to_target, img_size, nb_class)
             valid_X, valid_y = generate_dataset(train_names[valid], path_to_train, path_to_target, img_size, nb_class, aug=1)
             #--------------------------------------------------------------------------------------------------------------------
@@ -253,7 +260,7 @@ def cross_valid():
             else:
                 valid_score_list.append(mean_acc)
         result.iloc[model_i, 0] = np.mean(valid_score_list)
-    result.to_csv(out + ['multi','binary'][binary] + '_' + str(epoch) + 'epoch.csv')
+    result.to_csv(out + str(nb_class) + 'class_' + str(epoch) + 'epoch.csv')
 
 
 def make_model(i_model,i_loss, img_size, nb_class, weights, lr):
@@ -269,9 +276,13 @@ def make_model(i_model,i_loss, img_size, nb_class, weights, lr):
     if   i_model == 0:
         model = FCN.create_fcn32s()
     elif i_model == 1:
-        model = unet.create_model()
+        model = unet.create_unet()
     elif i_model == 2:
-        model = unet.create_model2()
+        model = unet.create_unet2()
+    elif i_model == 3:
+        model = unet.create_pix2pix()
+    elif i_model == 4:
+        model = unet.create_pix2pix_2()
 
     adam = Adam(lr)
     # es_cb = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='auto')
@@ -281,8 +292,23 @@ def make_model(i_model,i_loss, img_size, nb_class, weights, lr):
         model.compile(loss=weighted_crossentropy, optimizer=adam)
     return model
 
+def original_img():
+    path_to_train = './data/ori/'
+    out_dir = './result/experiment/original/'
+    with open('./data/train.txt','r') as f:
+        ls = f.readlines()
+    train_names = [l.strip('\n') for l in ls]
+    with open('./data/test.txt','r') as f:
+        ls = f.readlines()
+    test_names = [l.strip('\n') for l in ls]
+    for name in test_names:
+        path = path_to_train + "or{}.png".format(name)
+        img = load_data(path,mode ='original')
+        img.save(out_dir + "or{}.png".format(name))
+
 
 
 if __name__ == '__main__':
     train()
     # cross_valid()
+    # original_img()
