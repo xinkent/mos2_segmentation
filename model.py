@@ -1,11 +1,13 @@
 import numpy as np
 from keras.layers import merge, Input
-from keras.layers.core import Activation
+from keras.layers.core import Activation, Dropout, Flatten, Lambda
 from keras.layers.convolutional import Conv2D, Cropping2D,Conv2DTranspose
 from keras.layers.pooling import MaxPooling2D
+from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.merge import concatenate
 from keras.layers import Add
-from keras.models import Model
+from keras.models import Model,Sequential
+from keras.layers.normalization import BatchNormalization
 from keras.optimizers import Adam
 from keras.engine.topology import Layer
 from keras.utils import np_utils, generic_utils
@@ -16,6 +18,23 @@ from keras.preprocessing import image
 from keras.utils import plot_model
 from keras.utils.vis_utils import model_to_dot
 from IPython.display import SVG
+
+def CBR(ch,shape,bn=True,sample='down',activation=LeakyReLU, dropout=False):
+    model = Sequential()
+    if sample=='down':
+        model.add(Conv2D(filters=ch, kernel_size=(4,4), strides=2, padding='same',input_shape=shape))
+    else:
+        model.add(Conv2DTranspose(filters=ch, kernel_size=(4,4), strides=2, padding='same',input_shape=shape))
+    if bn:
+        model.add(BatchNormalization())
+    if dropout:
+        model.add(Dropout(0.5))
+    if activation == LeakyReLU:
+        model.add(LeakyReLU(alpha=0.2))
+    else:
+        model.add(Activation('relu'))
+    return model
+
 
 class FullyConvolutionalNetwork():
     def __init__(self, batchsize=1, img_height=512, img_width=512, FCN_CLASSES=5):
@@ -66,7 +85,7 @@ class Unet():
         self.img_width = img_width
         self.FCN_CLASSES = FCN_CLASSES
 
-    def create_model(self):
+    def create_unet(self):
         ip = Input(shape=(self.img_height, self.img_width,3))
 
         # encoder
@@ -94,7 +113,7 @@ class Unet():
         model = Model(ip, op)
         return model
 
-    def create_model2(self):
+    def create_unet2(self):
         ip = Input(shape=(self.img_height, self.img_width,3))
 
         # encoder
@@ -122,14 +141,14 @@ class Unet():
         model = Model(ip, op)
         return model
 
-    def pix2pix(self):
+    def create_pix2pix(self):
         ip = Input(shape=(self.img_height, self.img_width, 3))
         # encoder
         h1 = Conv2D(filters = 64, kernel_size = (3,3), strides = 1, padding = 'same', input_shape = (512,512,3))(ip)
         h2 = CBR(128, (512, 512, 64))(h1)
         h3 = CBR(256, (256, 256, 128))(h2)
         h4 = CBR(512, (128, 128, 256))(h3)
-        h5 = CBR(1024, (64, 64, 512))(h3)
+        h5 = CBR(1024, (64, 64, 512))(h4)
         # decoder
         h = CBR(512, (32,32,1024), sample='up', activation='relu', dropout=True)(h5)
         h = CBR(256, (64,64,1024), sample='up',activation='relu',dropout=True)(concatenate([h,h4]))
@@ -138,6 +157,27 @@ class Unet():
         h = Conv2D(filters = self.FCN_CLASSES, kernel_size=(3,3), strides=1, padding='same')(concatenate([h,h1]))
         op = Activation('softmax')(h)
         model = Model(ip, op)
+        return model
+
+    def create_pix2pix_2(self):
+        ip = Input(shape=(self.img_height, self.img_width, 3))
+        # encoder
+        h1 = Conv2D(filters = 64, kernel_size = (3,3), strides = 1, padding = 'same', input_shape = (512,512,3))(ip)
+        h2 = CBR(128, (512, 512, 64))(h1)
+        h3 = CBR(256, (256, 256, 128))(h2)
+        h4 = CBR(512, (128, 128, 256))(h3)
+        h5 = CBR(512, (64, 64, 512))(h4)
+        h6 = CBR(512, (32, 32, 512))(h5)
+        # decoder
+        h = CBR(512,(16,16,512), sample='up', activation='relu', dropout=True)(h6)
+        h = CBR(512, (32,32,1024), sample='up', activation='relu', dropout=True)(concatenate([h,h5]))
+        h = CBR(256, (64,64,1024), sample='up',activation='relu',dropout=True)(concatenate([h,h4]))
+        h = CBR(128, (128,128,512), sample='up',activation='relu',dropout=True)(concatenate([h,h3]))
+        h = CBR(64,  (64,64,256)   , sample='up',activation='relu',dropout=True)(concatenate([h,h2]))
+        h = Conv2D(filters = self.FCN_CLASSES, kernel_size=(3,3), strides=1, padding='same')(concatenate([h,h1]))
+        op = Activation('softmax')(h)
+        model = Model(ip, op)
+        return model
 
 
 def bilinear_upsample_weights(factor, number_of_classes):
