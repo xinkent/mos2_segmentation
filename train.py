@@ -61,8 +61,8 @@ def train():
     if binary:
         nb_class = 2
     else:
-        nb_class = 5
-        # nb_class = 3
+        # nb_class = 5
+        nb_class = 3
     with open('./data/train.txt','r') as f:
         ls = f.readlines()
     train_names = [l.strip('\n') for l in ls]
@@ -87,8 +87,10 @@ def train():
     
 
     nb_data = len(train_names)
-    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
+    # train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
+    train_X, train_y = generate_dataset2(train_names, path_to_train, path_to_target, img_size, nb_class, aug=40)
     test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, nb_class, aug=1)
+    print('train data is ' + str(train_X.shape[0])) 
 
     #--------------------------------------------------------------------------------------------------------------------
     # training
@@ -105,10 +107,10 @@ def train():
     # train_model.compile(loss=crossentropy, optimizer=adam)
     # train_model.compile(loss=weighted_crossentropy, optimizer=adam)
     
-    # es_cb = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='auto')
+    es_cb = EarlyStopping(monitor='val_loss', patience=5, verbose=0, mode='auto')
     # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
     train_model = make_model(args.model, args.weight, img_size, nb_class,class_weights, lr) # (model(1:fcn, 2:unet, 3:unet2) ,  weight(0:no weight 1:weight)) 
-    # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1)
+    # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.2)
     train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch) 
     train_model.save_weights(out + '/weights.h5')
 
