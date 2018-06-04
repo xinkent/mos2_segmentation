@@ -128,10 +128,13 @@ class Unet():
         h5 = Conv2D(1024, (3,3), padding= 'same', activation = 'relu')(h)
 
         h = Conv2DTranspose(512, (2,2), strides=2, padding='same')(h5)
+        h = Dropout(0.5)(h)
         h = Conv2D(512,(3,3), padding= 'same', activation ='relu')(concatenate([h, h4]))
         h = Conv2DTranspose(256, (2,2), strides=2, padding='same')(h)
+        h = Dropout(0.5)(h)
         h = Conv2D(256,(3,3), padding= 'same', activation ='relu')(concatenate([h, h3]))
         h = Conv2DTranspose(128, (2,2), strides=2, padding='same')(h)
+        h = Dropout(0.5)(h)
         h = Conv2D(128,(3,3), padding= 'same', activation ='relu')(concatenate([h, h2]))
         h = Conv2DTranspose(64, (2,2),  strides=2, padding='same')(h)
         h = Conv2D(64,(3,3), padding= 'same', activation ='relu')(concatenate([h, h1]))
@@ -145,10 +148,10 @@ class Unet():
         ip = Input(shape=(self.img_height, self.img_width, 3))
         # encoder
         h1 = Conv2D(filters = 64, kernel_size = (3,3), strides = 1, padding = 'same', input_shape = (512,512,3))(ip)
-        h2 = CBR(128, (512, 512, 64))(h1)
-        h3 = CBR(256, (256, 256, 128))(h2)
-        h4 = CBR(512, (128, 128, 256))(h3)
-        h5 = CBR(1024, (64, 64, 512))(h4)
+        h2 = CBR(128, (512, 512, 64), dropout = True)(h1)
+        h3 = CBR(256, (256, 256, 128), dropout = True)(h2)
+        h4 = CBR(512, (128, 128, 256), dropout = True)(h3)
+        h5 = CBR(1024, (64, 64, 512), dropout = True)(h4)
         # decoder
         h = CBR(512, (32,32,1024), sample='up', activation='relu', dropout=True)(h5)
         h = CBR(256, (64,64,1024), sample='up',activation='relu',dropout=True)(concatenate([h,h4]))
