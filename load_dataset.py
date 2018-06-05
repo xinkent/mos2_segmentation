@@ -109,8 +109,10 @@ def load_data_aug2(name, path_to_train, path_to_target, size=512, aug=3, nb_clas
         j = np.random.randint(3)
         if j == 1:
             img = ImageOps.flip(img)
+            label = ImageOps.flip(label)
         elif j == 2:
             img = ImageOps.mirror(img)
+            label = ImageOps.mirror(label)
             
         # ランダムに色を調整        
         img = np.array(img, dtype=np.uint8)
