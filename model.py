@@ -144,10 +144,59 @@ class Unet():
         model = Model(ip, op)
         return model
 
+    def create_unet2_gray(self):
+        ip = Input(shape=(self.img_height, self.img_width,1))
+
+        # encoder
+        h1 = Conv2D(64,   (3,3), padding= 'same', activation = 'relu')(ip)
+        h = MaxPooling2D(padding='same')(h1)
+        h2 = Conv2D(128,  (3,3), padding= 'same', activation = 'relu')(h)
+        h = MaxPooling2D(padding='same')(h2)
+        h3 = Conv2D(256,  (3,3), padding= 'same', activation = 'relu')(h)
+        h = MaxPooling2D(padding='same')(h3)
+        h4 = Conv2D(512,  (3,3), padding= 'same', activation = 'relu')(h)
+        h = MaxPooling2D(padding='same')(h4)
+        h5 = Conv2D(1024, (3,3), padding= 'same', activation = 'relu')(h)
+
+        h = Conv2DTranspose(512, (2,2), strides=2, padding='same')(h5)
+        h = Dropout(0.5)(h)
+        h = Conv2D(512,(3,3), padding= 'same', activation ='relu')(concatenate([h, h4]))
+        h = Conv2DTranspose(256, (2,2), strides=2, padding='same')(h)
+        h = Dropout(0.5)(h)
+        h = Conv2D(256,(3,3), padding= 'same', activation ='relu')(concatenate([h, h3]))
+        h = Conv2DTranspose(128, (2,2), strides=2, padding='same')(h)
+        h = Dropout(0.5)(h)
+        h = Conv2D(128,(3,3), padding= 'same', activation ='relu')(concatenate([h, h2]))
+        h = Conv2DTranspose(64, (2,2),  strides=2, padding='same')(h)
+        h = Conv2D(64,(3,3), padding= 'same', activation ='relu')(concatenate([h, h1]))
+
+        h = Conv2D(self.FCN_CLASSES, (1, 1), activation='relu')(h)
+        op = Activation('softmax')(h)
+        model = Model(ip, op)
+        return model
+
     def create_pix2pix(self):
         ip = Input(shape=(self.img_height, self.img_width, 3))
         # encoder
         h1 = Conv2D(filters = 64, kernel_size = (3,3), strides = 1, padding = 'same', input_shape = (512,512,3))(ip)
+        h2 = CBR(128, (512, 512, 64), dropout = True)(h1)
+        h3 = CBR(256, (256, 256, 128), dropout = True)(h2)
+        h4 = CBR(512, (128, 128, 256), dropout = True)(h3)
+        h5 = CBR(1024, (64, 64, 512), dropout = True)(h4)
+        # decoder
+        h = CBR(512, (32,32,1024), sample='up', activation='relu', dropout=True)(h5)
+        h = CBR(256, (64,64,1024), sample='up',activation='relu',dropout=True)(concatenate([h,h4]))
+        h = CBR(128, (128,128,512), sample='up',activation='relu',dropout=True)(concatenate([h,h3]))
+        h = CBR(64,  (64,64,256)   , sample='up',activation='relu',dropout=True)(concatenate([h,h2]))
+        h = Conv2D(filters = self.FCN_CLASSES, kernel_size=(3,3), strides=1, padding='same')(concatenate([h,h1]))
+        op = Activation('softmax')(h)
+        model = Model(ip, op)
+        return model
+
+    def create_pix2pix_gray(self):
+        ip = Input(shape=(self.img_height, self.img_width, 1))
+        # encoder
+        h1 = Conv2D(filters = 64, kernel_size = (3,3), strides = 1, padding = 'same', input_shape = (512,512,1))(ip)
         h2 = CBR(128, (512, 512, 64), dropout = True)(h1)
         h3 = CBR(256, (256, 256, 128), dropout = True)(h2)
         h4 = CBR(512, (128, 128, 256), dropout = True)(h3)
