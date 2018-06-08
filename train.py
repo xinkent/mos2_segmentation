@@ -83,13 +83,14 @@ def train():
     # for name in test_names:
     #     f.write(name + '\n')
     # f.close()
-    # return 0 
-    
+    # return 0
+
     nb_data = len(train_names)
     # train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
-    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, color = 1, nb_class = nb_class, aug=10)
-    test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, color = 1, nb_class = nb_class, aug=0)
-    print('train data is ' + str(train_X.shape[0])) 
+    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, color = 2, nb_class = nb_class, aug=3)
+    test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, color = 2, nb_class = nb_class, aug=0)
+    nb_train = train_X.shape[0]
+    print('train data is ' + str(nb_train))
 
     #--------------------------------------------------------------------------------------------------------------------
     # training
@@ -105,12 +106,12 @@ def train():
     # train_model = unet.create_model2()
     # train_model.compile(loss=crossentropy, optimizer=adam)
     # train_model.compile(loss=weighted_crossentropy, optimizer=adam)
-    
+
     es_cb = EarlyStopping(monitor='val_loss', patience=5, verbose=0, mode='auto')
     # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
-    train_model = make_model(args.model, args.weight, img_size, nb_class,class_weights, lr) # (model(1:fcn, 2:unet, 3:unet2) ,  weight(0:no weight 1:weight)) 
+    train_model = make_model(args.model, args.weight, img_size, nb_class,class_weights, lr) # (model(1:fcn, 2:unet, 3:unet2) ,  weight(0:no weight 1:weight))
     # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.2)
-    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch) 
+    train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch)
     train_model.save_weights(out + '/weights.h5')
     # train_model.load_weights(out + '/weights.h5')
 
@@ -153,6 +154,23 @@ def train():
     #--------------------------------------------------------------------------------------------------------------------
     # visualize
     #--------------------------------------------------------------------------------------------------------------------
+    ind = np.random.permutation(nb_train)[0:10]
+    pred_train = train_model.predict(train_X[ind])
+    train_y = train_y[ind]
+    for i in range(10):
+        pr = pred_train[i]
+        y = train_y[i]
+        pr = pr.argmax(axis=2)
+        y  = y.argmax(axis=2)
+        y_rgb = np.zeros((img_size,img_size,3))
+        pred_rgb = np.zeros((img_size, img_size,3))
+        for i in range(nb_class):
+            y_rgb[y == i] = color_map[i]
+            pred_rgb[pr==i] = color_map[i]
+        # img.save(out + '/input_' + name + '.png')
+        Image.fromarray(y_rgb.astype(np.uint8)).save(out + '/label_train' + i + '.png')
+        Image.fromarray(pred_rgb.astype(np.uint8)).save(out + '/pred_train' + i + '.png')
+
     for pr,y,name in zip(pred, test_y, test_names):
         pr = pr.argmax(axis=2)
         y  = y.argmax(axis=2)

@@ -23,13 +23,14 @@ def load_data(name, path_to_train, path_to_target, size=512, color = 0, nb_class
     lh = (h-size)/2
     img = img.crop((lw,lh, lw+size, lh +size))
     label = label.crop((lw,lh, lw+size, lh +size))
-    if color == 0:
-        img = np.array(img, dtype = np.float64)[np.newaxis,:]
-        img = preprocess_input(img)
+
     if color == 1:
         img = img.convert('L')
-        img = np.array(img, dtype = np.float64) 
+        img = np.array(img, dtype = np.float64)
         img = img / 255.0
+    else:
+        img = np.array(img, dtype = np.float64)[np.newaxis,:]
+        img = preprocess_input(img)
 
     label = np.array(label, dtype=np.int32)
     label = multi_label(label,size, nb_class)
@@ -44,18 +45,20 @@ def load_data_aug(name, path_to_train, path_to_target, size=512, color = 0 ,aug=
     label_ori = Image.open(path_to_target + "col{}.png".format(name))
     w,h = img_ori.size
     cn = iaa.SomeOf((0,1),[
-        iaa.ContrastNormalization((0.1,1.9)),  # 明るさ正規化
+        iaa.ContrastNormalization((0.7,1.3)),  # 明るさ正規化
         iaa.Sequential([iaa.ChangeColorspace(from_colorspace="RGB", to_colorspace="HSV"),
-                                   iaa.WithChannels(0, iaa.Add((-15,15))),
+                                   iaa.WithChannels(0, iaa.Add((-10,10))),
                                    iaa.ChangeColorspace(from_colorspace="HSV", to_colorspace="RGB")
-                                 ])
-                ])
+                                 ]),
+        iaa.Grayscale(alpha=(0,0.5))
+        ])
     for i in range(aug):
         # ランダムにcrop
         lw = np.random.randint(0,(w-size))
         lh = np.random.randint(0,(h-size))
         img = img_ori.crop((lw,lh, lw+size, lh +size))
         label = label_ori.crop((lw,lh, lw+size, lh+size))
+
 
         # ランダムに反転
         j = np.random.randint(3)
@@ -78,9 +81,15 @@ def load_data_aug(name, path_to_train, path_to_target, size=512, color = 0 ,aug=
             img = np.array(img, dtype=np.uint8)
             img = cn.augment_image(img)
 
-        imgs.append(img)
+        # ランダムにratate
+        t = np.random.rand() * 90
+        rotate = iaa.Affine(rotate=(t,t))
+        img = rotate.augment_image(img)
         label = np.array(label, dtype=np.int32)
+        label = rotate.augment_image(label)
+
         label = multi_label(label,size, nb_class)
+        imgs.append(img)
         labels.append(label)
 
     labels = np.array(labels)
