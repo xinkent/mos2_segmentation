@@ -85,11 +85,10 @@ def train():
     # f.close()
     # return 0 
     
-
     nb_data = len(train_names)
     # train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
-    train_X, train_y = generate_dataset2(train_names, path_to_train, path_to_target, img_size, nb_class, aug=40)
-    test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, nb_class, aug=1)
+    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, color = 1, nb_class = nb_class, aug=10)
+    test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, color = 1, nb_class = nb_class, aug=0)
     print('train data is ' + str(train_X.shape[0])) 
 
     #--------------------------------------------------------------------------------------------------------------------
@@ -113,6 +112,7 @@ def train():
     # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.2)
     train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch) 
     train_model.save_weights(out + '/weights.h5')
+    # train_model.load_weights(out + '/weights.h5')
 
     #--------------------------------------------------------------------------------------------------------------------
     # predict
@@ -202,8 +202,8 @@ def cross_valid():
     if binary:
         nb_class = 2
     else:
-        nb_class = 5
-        # nb_class = 3
+        # nb_class = 5
+        nb_class = 3
     with open('./data/train.txt','r') as f:
         ls = f.readlines()
     train_names = np.array([l.strip('\n') for l in ls])
@@ -214,16 +214,17 @@ def cross_valid():
     nb_data = len(train_names)
     random.shuffle(train_names)
     result = pd.DataFrame(np.zeros((3,1)))
-    result.index = ['Unet2', 'pix2pix', 'pix2pix2']
+    result.index = ['Unet2', 'pix2pix', 'pix2pix_weighted']
     n_model = len(result.index)
-    model_index_list = ((2,0), (3,0),(3,1))
+    model_index_list = ((2,0), (3,0),(2,1))
     k_fold = KFold(n_splits = 3)
     for model_i in range(n_model):
         print(result.index[model_i])
         valid_score_list = []
         p = ProgressBar()
         for train, valid in p(k_fold.split(train_names)):
-            train_X, train_y = generate_dataset(train_names[train], path_to_train, path_to_target, img_size, nb_class)
+            print(valid)
+            train_X, train_y = generate_dataset2(train_names[train], path_to_train, path_to_target, img_size, nb_class, 40)
             valid_X, valid_y = generate_dataset(train_names[valid], path_to_train, path_to_target, img_size, nb_class, aug=1)
             #--------------------------------------------------------------------------------------------------------------------
             # training
@@ -262,7 +263,7 @@ def cross_valid():
             else:
                 valid_score_list.append(mean_acc)
         result.iloc[model_i, 0] = np.mean(valid_score_list)
-    result.to_csv(out + str(nb_class) + 'class_' + str(epoch) + 'epoch.csv')
+    result.to_csv(out + 'validation.csv')
 
 
 def make_model(i_model,i_loss, img_size, nb_class, weights, lr):
@@ -281,8 +282,12 @@ def make_model(i_model,i_loss, img_size, nb_class, weights, lr):
         model = unet.create_unet()
     elif i_model == 2:
         model = unet.create_unet2()
+    elif i_model == 12:
+        model = unet.create_unet2_gray()
     elif i_model == 3:
         model = unet.create_pix2pix()
+    elif i_model == 13:
+        model = unet.create_pix2pix_gray()
     elif i_model == 4:
         model = unet.create_pix2pix_2()
 

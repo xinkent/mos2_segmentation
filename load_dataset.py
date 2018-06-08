@@ -15,7 +15,7 @@ def multi_label(labels, size, nb_class):
     return y
 
 
-def load_data(name, path_to_train, path_to_target, size=512, nb_class=5):
+def load_data(name, path_to_train, path_to_target, size=512, color = 0, nb_class=5):
     img = Image.open(path_to_train + "or{}.png".format(name))
     label = Image.open(path_to_target + "col{}.png".format(name))
     w,h = img.size
@@ -23,9 +23,13 @@ def load_data(name, path_to_train, path_to_target, size=512, nb_class=5):
     lh = (h-size)/2
     img = img.crop((lw,lh, lw+size, lh +size))
     label = label.crop((lw,lh, lw+size, lh +size))
-
-    img = image.img_to_array(img)[np.newaxis,:]
-    # img = preprocess_input(img)
+    if color == 0:
+        img = np.array(img, dtype = np.float64)[np.newaxis,:]
+        img = preprocess_input(img)
+    if color == 1:
+        img = img.convert('L')
+        img = np.array(img, dtype = np.float64) 
+        img = img / 255.0
 
     label = np.array(label, dtype=np.int32)
     label = multi_label(label,size, nb_class)
@@ -87,14 +91,18 @@ def load_data_aug(name, path_to_train, path_to_target, size=512, color = 0 ,aug=
         imgs = preprocess_input(imgs)
     return imgs, labels
 
-def generate_dataset2(names, path_to_train, path_to_target, img_size, color, nb_class, aug=3):
+def generate_dataset(names, path_to_train, path_to_target, img_size, color, nb_class, aug=3):
     X_list = []
     y_list = []
+    if color == 1:
+        channel = 1
+    else:
+        channel = 3
     for name in names:
         if aug == 0:
-            X,y =load_data(name, path_to_train, path_to_target, size=img_size, nb_class=nb_class)
+            X,y =load_data(name, path_to_train, path_to_target, img_size, color, nb_class=nb_class)
         else:
             X, y = load_data_aug(name, path_to_train, path_to_target, img_size, color, nb_class=nb_class, aug=aug)
         X_list.append(X)
         y_list.append(y)
-    return np.array(X_list).reshape([len(names),img_size, img_size, -1]), np.array(y_list).reshape([len(names), img_size, img_size, nb_class])
+    return np.array(X_list).reshape([-1,img_size, img_size, channel]), np.array(y_list).reshape([-1, img_size, img_size, nb_class])
