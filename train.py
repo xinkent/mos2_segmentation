@@ -70,25 +70,9 @@ def train():
         ls = f.readlines()
     test_names = [l.strip('\n') for l in ls]
 
-    # names = os.listdir(path_to_train)
-    # names = np.array([name[2:7] for name in names])
-    # ind = np.random.permutation(len(names))
-    # train_names = names[ind[:24]]
-    # test_names  = names[ind[24:]]
-    # f = open('./data/train.txt','w')
-    # for name in train_names:
-    #     f.write(name + '\n')
-    # f.close()
-    # f = open('./data/test.txt','w')
-    # for name in test_names:
-    #     f.write(name + '\n')
-    # f.close()
-    # return 0
-
     nb_data = len(train_names)
-    # train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, nb_class)
-    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, color = 2, nb_class = nb_class, aug=3)
-    test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, color = 2, nb_class = nb_class, aug=0)
+    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, color = 3, nb_class = nb_class, aug=40)
+    test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, color = 0, nb_class = nb_class, aug=0)
     nb_train = train_X.shape[0]
     print('train data is ' + str(nb_train))
 
@@ -108,8 +92,8 @@ def train():
     # train_model.compile(loss=weighted_crossentropy, optimizer=adam)
 
     es_cb = EarlyStopping(monitor='val_loss', patience=5, verbose=0, mode='auto')
-    # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
     train_model = make_model(args.model, args.weight, img_size, nb_class,class_weights, lr) # (model(1:fcn, 2:unet, 3:unet2) ,  weight(0:no weight 1:weight))
+    # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.1, callbacks=[es_cb])
     # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch, validation_split=0.2)
     train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch)
     train_model.save_weights(out + '/weights.h5')
@@ -137,6 +121,8 @@ def train():
     mean_iou      = np.sum(mean_iou_list) / nb_class
     if binary:
         fpr, tpr, threshods = roc_curve(y, pred_score, pos_label = 1)
+        fpr_tpr = np.concatenate((np.array(fpr)[:,np.newaxis], np.array(tpr)[:,np.newaxis]),axis=1)
+        np.savetxt(out + '/fpr_tpr.csv', fpr_tpr, delimiter=',')
         auc_score = auc(fpr,tpr)
         recall       = mat[1,1] / np.sum(mat[1,:])
         precision = mat[1,1] / np.sum(mat[:,1])
@@ -157,9 +143,9 @@ def train():
     ind = np.random.permutation(nb_train)[0:10]
     pred_train = train_model.predict(train_X[ind])
     train_y = train_y[ind]
-    for i in range(10):
-        pr = pred_train[i]
-        y = train_y[i]
+    for j in range(10):
+        pr = pred_train[j]
+        y = train_y[j]
         pr = pr.argmax(axis=2)
         y  = y.argmax(axis=2)
         y_rgb = np.zeros((img_size,img_size,3))
@@ -168,8 +154,8 @@ def train():
             y_rgb[y == i] = color_map[i]
             pred_rgb[pr==i] = color_map[i]
         # img.save(out + '/input_' + name + '.png')
-        Image.fromarray(y_rgb.astype(np.uint8)).save(out + '/label_train' + i + '.png')
-        Image.fromarray(pred_rgb.astype(np.uint8)).save(out + '/pred_train' + i + '.png')
+        Image.fromarray(y_rgb.astype(np.uint8)).save(out + '/train_label_' + str(j) + '.png')
+        Image.fromarray(pred_rgb.astype(np.uint8)).save(out + '/train_pred_' + str(j) + '.png')
 
     for pr,y,name in zip(pred, test_y, test_names):
         pr = pr.argmax(axis=2)
@@ -231,10 +217,12 @@ def cross_valid():
     train_names = np.concatenate([train_names, test_names])
     nb_data = len(train_names)
     random.shuffle(train_names)
-    result = pd.DataFrame(np.zeros((3,1)))
-    result.index = ['Unet2', 'pix2pix', 'pix2pix_weighted']
+    # result = pd.DataFrame(np.zeros((4,1)))
+    # result.index = ['Unet2', 'pix2pix', 'unet2_weighted', 'pix2pix_weighted']   
+    result = pd.DataFrame(np.zeros((2,1)))
+    result.index = ['Unet2', 'unet2_weighted']
     n_model = len(result.index)
-    model_index_list = ((2,0), (3,0),(2,1))
+    model_index_list = ((2,0), (2,1))
     k_fold = KFold(n_splits = 3)
     for model_i in range(n_model):
         print(result.index[model_i])
@@ -242,8 +230,8 @@ def cross_valid():
         p = ProgressBar()
         for train, valid in p(k_fold.split(train_names)):
             print(valid)
-            train_X, train_y = generate_dataset2(train_names[train], path_to_train, path_to_target, img_size, nb_class, 40)
-            valid_X, valid_y = generate_dataset(train_names[valid], path_to_train, path_to_target, img_size, nb_class, aug=1)
+            train_X, train_y = generate_dataset(train_names[train], path_to_train, path_to_target, img_size, color = 0, nb_class=nb_class, aug=20)
+            valid_X, valid_y = generate_dataset(train_names[valid], path_to_train, path_to_target, img_size, color = 0, nb_class=nb_class, aug=0)
             #--------------------------------------------------------------------------------------------------------------------
             # training
             #--------------------------------------------------------------------------------------------------------------------
@@ -310,7 +298,6 @@ def make_model(i_model,i_loss, img_size, nb_class, weights, lr):
         model = unet.create_pix2pix_2()
 
     adam = Adam(lr)
-    # es_cb = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='auto')
     if i_loss == 0:
         model.compile(loss=crossentropy, optimizer=adam)
     if i_loss == 1:

@@ -30,7 +30,8 @@ def load_data(name, path_to_train, path_to_target, size=512, color = 0, nb_class
         img = img / 255.0
     else:
         img = np.array(img, dtype = np.float64)[np.newaxis,:]
-        img = preprocess_input(img)
+        #  img = preprocess_input(img)
+        img = img / 255.0
 
     label = np.array(label, dtype=np.int32)
     label = multi_label(label,size, nb_class)
@@ -52,6 +53,15 @@ def load_data_aug(name, path_to_train, path_to_target, size=512, color = 0 ,aug=
                                  ]),
         iaa.Grayscale(alpha=(0,0.5))
         ])
+    
+    cn2 = iaa.SomeOf((0,1),[
+        iaa.ContrastNormalization((0.7,1.3)),  # 明るさ正規化
+        iaa.Sequential([iaa.ChangeColorspace(from_colorspace="RGB", to_colorspace="HSV"),
+                                   iaa.WithChannels(0, iaa.Add((-10,10))),
+                                   iaa.ChangeColorspace(from_colorspace="HSV", to_colorspace="RGB")
+                                 ]),
+        ])
+
     for i in range(aug):
         # ランダムにcrop
         lw = np.random.randint(0,(w-size))
@@ -77,9 +87,13 @@ def load_data_aug(name, path_to_train, path_to_target, size=512, color = 0 ,aug=
             img = img.convert('L')
             img = np.array(img, dtype=np.uint8)
         if color == 2:
-            # augmentation
+            # augmentation color and gray
             img = np.array(img, dtype=np.uint8)
             img = cn.augment_image(img)
+        if color == 3:
+            # augmentation color
+            img = np.array(img, dtype=np.uint8)
+            img = cn2.augment_image(img)
 
         # ランダムにratate
         t = np.random.rand() * 90
@@ -97,7 +111,8 @@ def load_data_aug(name, path_to_train, path_to_target, size=512, color = 0 ,aug=
     if color == 1:
         imgs = imgs / 255.0
     else:
-        imgs = preprocess_input(imgs)
+        # imgs = preprocess_input(imgs)
+        imgs = imgs / 255.0
     return imgs, labels
 
 def generate_dataset(names, path_to_train, path_to_target, img_size, color, nb_class, aug=3):
