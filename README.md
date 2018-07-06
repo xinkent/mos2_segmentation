@@ -5,4 +5,4 @@
 - model  
 0:fcn32s, 1:unet, 2:unet2, 3:pix2pix
 ## Sample
-' python train.py -e 100 -o ./result/ -ta ./data/label_012/ -g 0 -m 2 -w 0 `
+` python train.py -e 100 -o ./result/ -ta ./data/label_012/ -g 0 -m 2 -w 0 `
