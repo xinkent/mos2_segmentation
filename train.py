@@ -62,7 +62,7 @@ def train():
         nb_class = 2
     else:
         # nb_class = 5
-        nb_class = 3
+        nb_class = 4
     with open('./data/train.txt','r') as f:
         ls = f.readlines()
     train_names = [l.strip('\n') for l in ls]
