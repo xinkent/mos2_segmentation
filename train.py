@@ -13,7 +13,7 @@ from keras.callbacks import EarlyStopping
 from keras import backend as K
 import tensorflow as tf
 from PIL import Image
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, precision_recall_curve
 from sklearn.model_selection import KFold
 from load_dataset import *
 from model import FullyConvolutionalNetwork, Unet
@@ -62,7 +62,7 @@ def train():
         nb_class = 2
     else:
         # nb_class = 5
-        nb_class = 3
+        nb_class = 4
     with open('./data/train.txt','r') as f:
         ls = f.readlines()
     train_names = [l.strip('\n') for l in ls]
@@ -70,6 +70,7 @@ def train():
         ls = f.readlines()
     test_names = [l.strip('\n') for l in ls]
 
+    # 訓練の時はこの辺りのコメントを入れる
     nb_data = len(train_names)
     train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, color = 3, nb_class = nb_class, aug=40)
     test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, color = 0, nb_class = nb_class, aug=0)
@@ -79,6 +80,7 @@ def train():
     #--------------------------------------------------------------------------------------------------------------------
     # training
     #--------------------------------------------------------------------------------------------------------------------
+    # 訓練じは以下２つのコメントを入れる
     class_freq = np.array([np.sum(train_y.argmax(axis=3) == i) for i in range(nb_class)])
     # class_weights = np.median(class_freq) /class_freq
     class_weights = np.mean(class_freq) /class_freq
@@ -121,8 +123,11 @@ def train():
     mean_iou      = np.sum(mean_iou_list) / nb_class
     if binary:
         fpr, tpr, threshods = roc_curve(y, pred_score, pos_label = 1)
+        precision, recall, threshold = precision_recall_curve(y, pred_score)
         fpr_tpr = np.concatenate((np.array(fpr)[:,np.newaxis], np.array(tpr)[:,np.newaxis]),axis=1)
+        pr = np.concatenate((np.array(precision)[:,np.newaxis], np.array(recall)[:, np.newaxis]),axis = 1)
         np.savetxt(out + '/fpr_tpr.csv', fpr_tpr, delimiter=',')
+        np.savetxt(out + '/precsion_recall.csv', pr, delimiter=',')
         auc_score = auc(fpr,tpr)
         recall       = mat[1,1] / np.sum(mat[1,:])
         precision = mat[1,1] / np.sum(mat[:,1])
@@ -207,7 +212,7 @@ def cross_valid():
         nb_class = 2
     else:
         # nb_class = 5
-        nb_class = 3
+        nb_class = 4
     with open('./data/train.txt','r') as f:
         ls = f.readlines()
     train_names = np.array([l.strip('\n') for l in ls])
