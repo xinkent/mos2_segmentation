@@ -31,8 +31,11 @@ for name in os.listdir(img_path):
             cl = dist.argmin()
             label[x,y,cl] = 1
     label = label.argmax(axis=2).astype(np.uint8)
+    
+    # 2層 & それ以外の　学習ラベルを作る場合
     label[label !=2 ] = 0
     label[label == 2] = 1
+    
     label = Image.fromarray(label, mode='P')
     palette_im = Image.open('/Users/shin/Dataset/VOCdevkit/VOC2012/SegmentationClass/2007_000032.png')
     label.palette = copy.copy(palette_im.palette)
