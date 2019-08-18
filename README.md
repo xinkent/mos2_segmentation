@@ -1,9 +1,9 @@
 # mos2_segmentation
 ## Usage
-- Trianing & Test
+- Trianing & Test  
 ` python train.py -tr [path to traning data] -ta [path to target data] -e [epoch数] -b [バッチサイズ] -o [path to output] -m [model number] -w [0 or 1] -bi [0 or 1]`
 
-- Cross Validation
+- Cross Validation  
 ` python train.py -tr [path to traning data] -ta [path to target data] -e [epoch数] -b [バッチサイズ] -o [path to output] -at [0,1,2,3] -bi [0 or 1] `
 
 - model  
