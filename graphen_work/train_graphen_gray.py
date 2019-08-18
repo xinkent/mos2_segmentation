@@ -33,7 +33,6 @@ def train():
     parser.add_argument('--binary',         '-bi', type=int,   default=0)
     parser.add_argument('--model',          '-m',  type=int,   default=0)
     parser.add_argument('--weight',         '-w',  type=int,   default=0)
-    parser.add_argument('--augtype',        '-at', type=int,   default=0)
     parser.add_argument('--gpu', '-g', type=int, default=2)
 
     args = parser.parse_args()
@@ -43,7 +42,6 @@ def train():
     batchsize        = args.batchsize
     lr               = args.lr
     out              = args.out_path
-    augtype          = args.augtype
     binary           = [False,True][args.binary]
 
     # set gpu environment
@@ -73,7 +71,7 @@ def train():
 
     # 訓練の時はこの辺りのコメントを入れる
     nb_data = len(train_names)
-    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, color = augtype, nb_class = nb_class, aug=20)
+    train_X, train_y = generate_dataset(train_names, path_to_train, path_to_target, img_size, color = 3, nb_class = nb_class, aug=20)
     test_X,  test_y  = generate_dataset(test_names, path_to_train, path_to_target, img_size, color = 0, nb_class = nb_class, aug=0)
     nb_train = train_X.shape[0]
     print('train data is ' + str(nb_train))
@@ -226,7 +224,7 @@ def cross_valid():
     
     result = pd.DataFrame(np.zeros((2,1)))
     result.index = ['Unet2', 'unet2_weighted']
-    model_index_list = ((2,0), (2,1))
+    model_index_list = ((12,0), (12,1))
     
     # result = pd.DataFrame(np.zeros((1,1)))
     # result.index = ['unet2_weighted']
@@ -240,8 +238,8 @@ def cross_valid():
         p = ProgressBar()
         for train, valid in p(k_fold.split(train_names)):
             print(valid)
-            train_X, train_y = generate_dataset(train_names[train], path_to_train, path_to_target, img_size, color = augtype, nb_class=nb_class, aug=20)
-            valid_X, valid_y = generate_dataset(train_names[valid], path_to_train, path_to_target, img_size, color = 0, nb_class=nb_class, aug=0)
+            train_X, train_y = generate_dataset(train_names[train], path_to_train, path_to_target, img_size, color = 1, nb_class=nb_class, aug=20)
+            valid_X, valid_y = generate_dataset(train_names[valid], path_to_train, path_to_target, img_size, color = 1, nb_class=nb_class, aug=0)
             #--------------------------------------------------------------------------------------------------------------------
             # training
             #--------------------------------------------------------------------------------------------------------------------
@@ -331,6 +329,6 @@ def original_img():
 
 
 if __name__ == '__main__':
-    train()
-    # cross_valid()
+    # train()
+    cross_valid()
     # original_img()
