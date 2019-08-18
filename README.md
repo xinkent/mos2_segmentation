@@ -9,4 +9,7 @@
 - model  
 0:fcn32s, 1:unet, 2:unet2, 3:pix2pix
 ## Sample
-` python train.py -e 100 -o ./result/ -ta ./data/label_012/ -g 0 -m 2 -w 0 `
+- mos2  
+` python train.py -e 100 -o ./result/ -ta ./data/label_012/ -g 0 -m 2 -w 0 `  
+- graphen  
+` python train_graphen_gray.py -ta ../data/graphen/label_12/ -tr ../data/graphen/original_halfsize/ -o result/val/ -e 30  -b 1 -l 0.0001 -g 1 -at 1 `
