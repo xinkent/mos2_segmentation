@@ -251,7 +251,7 @@ def cross_valid():
             if binary and class_freq[1] == 0:
                 continue
             train_model = make_model(model_index_list[model_i][0],model_index_list[model_i][1],img_size, nb_class, class_weights,lr)
-            # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch,verbose=0)
+            train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch,verbose=0)
             #--------------------------------------------------------------------------------------------------------------------
             # predict
             #--------------------------------------------------------------------------------------------------------------------
