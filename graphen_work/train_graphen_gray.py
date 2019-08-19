@@ -222,8 +222,9 @@ def cross_valid():
     # result = pd.DataFrame(np.zeros((4,1)))
     # result.index = ['Unet2', 'pix2pix', 'unet2_weighted', 'pix2pix_weighted']   
     
-    result = pd.DataFrame(np.zeros((2,1)))
+    result = pd.DataFrame(np.zeros((2,2)))
     result.index = ['Unet2', 'unet2_weighted']
+    result.columns = ['pixel-wise','mean-acc']
     model_index_list = ((12,0), (12,1))
     
     # result = pd.DataFrame(np.zeros((1,1)))
@@ -275,8 +276,8 @@ def cross_valid():
                     f_value    = 2 * recall * precision / (recall + precision)
                 valid_score_list.append(f_value)
             else:
-                valid_score_list.append(mean_acc)
-        result.iloc[model_i, 0] = np.mean(valid_score_list)
+                valid_score_list.append([pixel_wise, mean_acc])
+        result.iloc[model_i] = np.mean(np.array(valid_score_list), axis=0)
     result.to_csv(out + 'val_epoch{0}_lr{1}_at{2}.csv'.format(epoch, lr, augtype))
 
 
