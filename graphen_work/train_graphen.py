@@ -224,8 +224,9 @@ def cross_valid():
     # result = pd.DataFrame(np.zeros((4,1)))
     # result.index = ['Unet2', 'pix2pix', 'unet2_weighted', 'pix2pix_weighted']   
     
-    result = pd.DataFrame(np.zeros((2,1)))
+    result = pd.DataFrame(np.zeros((2,2)))
     result.index = ['Unet2', 'unet2_weighted']
+    result.columns = ['pixel-wise', 'mean-acc']
     model_index_list = ((2,0), (2,1))
     
     # result = pd.DataFrame(np.zeros((1,1)))
@@ -250,7 +251,7 @@ def cross_valid():
             if binary and class_freq[1] == 0:
                 continue
             train_model = make_model(model_index_list[model_i][0],model_index_list[model_i][1],img_size, nb_class, class_weights,lr)
-            train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch,verbose=0)
+            # train_model.fit(train_X,train_y,batch_size = batchsize, epochs=epoch,verbose=0)
             #--------------------------------------------------------------------------------------------------------------------
             # predict
             #--------------------------------------------------------------------------------------------------------------------
@@ -277,8 +278,8 @@ def cross_valid():
                     f_value    = 2 * recall * precision / (recall + precision)
                 valid_score_list.append(f_value)
             else:
-                valid_score_list.append(mean_acc)
-        result.iloc[model_i, 0] = np.mean(valid_score_list)
+                valid_score_list.append([pixel_wise, mean_acc])
+        result.iloc[model_i] = np.mean(np.array(valid_score_list), axis=0)
     result.to_csv(out + 'val_epoch{0}_lr{1}_at{2}.csv'.format(epoch, lr, augtype))
 
 
@@ -331,6 +332,6 @@ def original_img():
 
 
 if __name__ == '__main__':
-    train()
-    # cross_valid()
+    # train()
+    cross_valid()
     # original_img()
